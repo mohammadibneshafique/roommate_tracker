@@ -10,66 +10,36 @@ if os.path.exists(EXCEL_FILE):
     df = pd.read_excel(EXCEL_FILE)
 else:
     df = pd.DataFrame(columns=[
-        "Date", "Item", "Quantity", "Unit", "Rate per Unit (SR)",
-        "Cost (SR)", "Paid By", "Receipt", "Type"
+        "Date", "Cost (SR)", "Paid By", "Voucher", "Type"
     ])
     df.to_excel(EXCEL_FILE, index=False)
 
 st.set_page_config(page_title="Roommate Ledger", page_icon="🏠")
 st.title("🏠 Roommate Ledger")
 
-section = st.sidebar.radio("Navigate", ["➕ Log Expenses", "💸 Record Payment", "📊 View Details"])
+section = st.sidebar.radio("Navigate", ["➕ Log Expense", "💸 Record Payment", "📊 View Details"])
 
-# ➕ Log Multiple Expenses
-if section == "➕ Log Expenses":
-    st.subheader("Log Multiple Expenses")
+# ➕ Log Expense
+if section == "➕ Log Expense":
+    st.subheader("Add a New Expense")
 
-    if "item_count" not in st.session_state:
-        st.session_state.item_count = 1
+    cost = st.number_input("Total Cost (SR)", min_value=0.0, format="%.2f")
+    payer = st.selectbox("Paid By", ["Abdullah", "Mahtab"])
+    expense_date = st.date_input("Date", value=date.today())
+    voucher = st.text_input("Voucher filename (optional)")
 
-    inputs = []
-
-    for i in range(st.session_state.item_count):
-        st.markdown(f"### Item {i + 1}")
-        item = st.text_input(f"Item Name {i + 1}", key=f"item_{i}")
-        quantity = st.number_input(f"Quantity {i + 1}", min_value=0.0, format="%.2f", key=f"qty_{i}")
-        unit = st.selectbox(f"Unit {i + 1}", ["kg", "liter", "pack", "bottle", "piece", "other"], key=f"unit_{i}")
-        rate = st.number_input(f"Rate per {unit} (SR) {i + 1} (optional)", min_value=0.0, format="%.2f", key=f"rate_{i}")
-
-        if rate > 0:
-            total_cost = quantity * rate
-            st.write(f"**Calculated Total Cost:** SR {total_cost:.2f}")
-        else:
-            total_cost = st.number_input(f"Enter Total Cost Manually (SR) {i + 1}", min_value=0.0, format="%.2f", key=f"manual_cost_{i}")
-
-        payer = st.selectbox(f"Payer {i + 1}", ["Abdullah", "Mahtab"], key=f"payer_{i}")
-        expense_date = st.date_input(f"Date {i + 1}", value=date.today(), key=f"date_{i}")
-        receipt = st.file_uploader(f"Receipt {i + 1} (optional)", type=["jpg", "jpeg", "png", "pdf"], key=f"receipt_{i}")
-
-        inputs.append({
+    if st.button("✅ Save Expense"):
+        new_entry = pd.DataFrame([{
             "Date": expense_date.strftime("%Y-%m-%d"),
-            "Item": item,
-            "Quantity": quantity,
-            "Unit": unit,
-            "Rate per Unit (SR)": rate if rate > 0 else "N/A",
-            "Cost (SR)": total_cost,
+            "Cost (SR)": cost,
             "Paid By": payer,
-            "Receipt": receipt.name if receipt else "None",
+            "Voucher": voucher if voucher else "None",
             "Type": "Expense"
-        })
+        }])
 
-    if st.button("➕ Add Another Item"):
-        st.session_state.item_count += 1
-
-    if st.button("✅ Save All"):
-        valid_entries = [entry for entry in inputs if entry["Item"] and entry["Cost (SR)"] > 0]
-        if valid_entries:
-            df = pd.concat([df, pd.DataFrame(valid_entries)], ignore_index=True)
-            df.to_excel(EXCEL_FILE, index=False)
-            st.success("All items saved to Excel!")
-            st.session_state.item_count = 1
-        else:
-            st.warning("Please fill out all required fields.")
+        df = pd.concat([df, new_entry], ignore_index=True)
+        df.to_excel(EXCEL_FILE, index=False)
+        st.success("Expense saved to Excel!")
 
 # 💸 Record Payment
 elif section == "💸 Record Payment":
@@ -81,13 +51,9 @@ elif section == "💸 Record Payment":
         if amount > 0:
             payment_entry = pd.DataFrame([{
                 "Date": date.today().strftime("%Y-%m-%d"),
-                "Item": "Repayment",
-                "Quantity": "N/A",
-                "Unit": "N/A",
-                "Rate per Unit (SR)": "N/A",
                 "Cost (SR)": amount,
                 "Paid By": name,
-                "Receipt": "None",
+                "Voucher": "None",
                 "Type": "Payment"
             }])
             df = pd.concat([df, payment_entry], ignore_index=True)
