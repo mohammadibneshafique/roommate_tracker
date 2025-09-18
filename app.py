@@ -106,53 +106,27 @@ elif section == "📊 View Details":
         else:
             st.markdown("""
             <style>
-            table {
-                width: 100%;
-                border-collapse: collapse;
-                font-size: 14px;
-            }
-            th, td {
+            .entry-row {
                 border: 1px solid #ccc;
                 padding: 6px;
-                text-align: center;
-            }
-            th {
-                background-color: #f2f2f2;
+                margin-bottom: 4px;
+                border-radius: 4px;
+                font-size: 14px;
             }
             </style>
             """, unsafe_allow_html=True)
 
-            # Build HTML table
-            table_html = """
-            <table>
-                <tr>
-                    <th>#</th>
-                    <th>Date</th>
-                    <th>Cost (SR)</th>
-                    <th>Paid By</th>
-                    <th>Voucher</th>
-                    <th>Type</th>
-                </tr>
-            """
             for i, row in expenses_only.iterrows():
-                table_html += f"""
-                <tr>
-                    <td>{i}</td>
-                    <td>{row['Date']}</td>
-                    <td>SR {row['Cost (SR)']:.2f}</td>
-                    <td>{row['Paid By']}</td>
-                    <td>{row['Voucher']}</td>
-                    <td>{row['Type']}</td>
-                </tr>
-                """
-            table_html += "</table>"
-            st.markdown(table_html, unsafe_allow_html=True)
+                with st.container():
+                    cols = st.columns([1, 2, 2, 2, 2, 2, 1, 1])
+                    cols[0].markdown(f"<div class='entry-row'><b>{i}</b></div>", unsafe_allow_html=True)
+                    cols[1].markdown(f"<div class='entry-row'>{row['Date']}</div>", unsafe_allow_html=True)
+                    cols[2].markdown(f"<div class='entry-row'>SR {row['Cost (SR)']:.2f}</div>", unsafe_allow_html=True)
+                    cols[3].markdown(f"<div class='entry-row'>{row['Paid By']}</div>", unsafe_allow_html=True)
+                    cols[4].markdown(f"<div class='entry-row'>{row['Voucher']}</div>", unsafe_allow_html=True)
+                    cols[5].markdown(f"<div class='entry-row'>{row['Type']}</div>", unsafe_allow_html=True)
 
-            # Add buttons below each row
-            for i, row in expenses_only.iterrows():
-                col1, col2 = st.columns([1, 1])
-                with col1:
-                    if st.button(f"✏️ Edit Entry #{i}", key=f"edit_{i}"):
+                    if cols[6].button("✏️", key=f"edit_{i}"):
                         with st.form(f"edit_form_{i}"):
                             new_date = st.date_input("Date", value=pd.to_datetime(row["Date"]))
                             new_cost = st.number_input("Cost (SR)", value=float(row["Cost (SR)"]), format="%.2f")
@@ -168,8 +142,8 @@ elif section == "📊 View Details":
                                 df.to_excel(EXCEL_FILE, index=False)
                                 st.success("Entry updated successfully.")
                                 st.experimental_rerun()
-                with col2:
-                    if st.button(f"🗑️ Delete Entry #{i}", key=f"delete_{i}"):
+
+                    if cols[7].button("🗑️", key=f"delete_{i}"):
                         original_index = df[(df["Type"] == "Expense")].index[i]
                         df = df.drop(index=original_index).reset_index(drop=True)
                         df.to_excel(EXCEL_FILE, index=False)
