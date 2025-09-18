@@ -79,8 +79,8 @@ elif section == "📊 View Details":
                 cost = row["Cost (SR)"]
                 totals[payer]["contribution"] += cost
                 split = cost / 2
-                totals["Abdullah"]["balance"] += split
-                totals["Mahtab"]["balance"] += split
+                other = "Mahtab" if payer == "Abdullah" else "Abdullah"
+                totals[other]["balance"] += split
 
             for _, row in payments_only.iterrows():
                 payer = row["Paid By"]
