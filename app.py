@@ -104,15 +104,56 @@ elif section == "📊 View Details":
         if expenses_only.empty:
             st.info("No expenses logged yet.")
         else:
-            for i, row in expenses_only.iterrows():
-                col1, col2, col3, col4, col5, col6, col7 = st.columns([2, 2, 2, 2, 2, 1, 1])
-                col1.write(row["Date"])
-                col2.write(f"SR {row['Cost (SR)']:.2f}")
-                col3.write(row["Paid By"])
-                col4.write(row["Voucher"])
-                col5.write(row["Type"])
+            st.markdown("""
+            <style>
+            .ledger-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .ledger-table th, .ledger-table td {
+                border: 1px solid #ccc;
+                padding: 8px;
+                text-align: left;
+                font-size: 14px;
+            }
+            .ledger-table th {
+                background-color: #f2f2f2;
+            }
+            </style>
+            """, unsafe_allow_html=True)
 
-                if col6.button("✏️", key=f"edit_{i}"):
+            table_html = """
+            <table class="ledger-table">
+                <tr>
+                    <th>#</th>
+                    <th>Date</th>
+                    <th>Cost (SR)</th>
+                    <th>Paid By</th>
+                    <th>Voucher</th>
+                    <th>Type</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                </tr>
+            """
+
+            for i, row in expenses_only.iterrows():
+                table_html += f"""
+                <tr>
+                    <td>{i}</td>
+                    <td>{row['Date']}</td>
+                    <td>SR {row['Cost (SR)']:.2f}</td>
+                    <td>{row['Paid By']}</td>
+                    <td>{row['Voucher']}</td>
+                    <td>{row['Type']}</td>
+                    <td><form action="" method="post"><button name="edit_{i}" type="submit">✏️</button></form></td>
+                    <td><form action="" method="post"><button name="delete_{i}" type="submit">🗑️</button></form></td>
+                </tr>
+                """
+            table_html += "</table>"
+            st.markdown(table_html, unsafe_allow_html=True)
+
+            for i, row in expenses_only.iterrows():
+                if st.button(f"✏️ Edit Entry #{i}", key=f"edit_{i}"):
                     with st.form(f"edit_form_{i}"):
                         new_date = st.date_input("Date", value=pd.to_datetime(row["Date"]))
                         new_cost = st.number_input("Cost (SR)", value=float(row["Cost (SR)"]), format="%.2f")
@@ -129,7 +170,7 @@ elif section == "📊 View Details":
                             st.success("Entry updated successfully.")
                             st.experimental_rerun()
 
-                if col7.button("🗑️", key=f"delete_{i}"):
+                if st.button(f"🗑️ Delete Entry #{i}", key=f"delete_{i}"):
                     original_index = df[(df["Type"] == "Expense")].index[i]
                     df = df.drop(index=original_index).reset_index(drop=True)
                     df.to_excel(EXCEL_FILE, index=False)
