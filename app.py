@@ -104,48 +104,10 @@ elif section == "📊 View Details":
         if expenses_only.empty:
             st.info("No expenses logged yet.")
         else:
-            st.markdown("""
-            <style>
-            .ledger-table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            .ledger-table th, .ledger-table td {
-                border: 1px solid #ccc;
-                padding: 8px;
-                text-align: left;
-                font-size: 14px;
-            }
-            .ledger-table th {
-                background-color: #f2f2f2;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-
-            table_html = """
-            <table class="ledger-table">
-                <tr>
-                    <th>#</th>
-                    <th>Date</th>
-                    <th>Cost (SR)</th>
-                    <th>Paid By</th>
-                    <th>Voucher</th>
-                    <th>Type</th>
-                </tr>
-            """
-            for i, row in expenses_only.iterrows():
-                table_html += f"""
-                <tr>
-                    <td>{i}</td>
-                    <td>{row['Date']}</td>
-                    <td>SR {row['Cost (SR)']:.2f}</td>
-                    <td>{row['Paid By']}</td>
-                    <td>{row['Voucher']}</td>
-                    <td>{row['Type']}</td>
-                </tr>
-                """
-            table_html += "</table>"
-            st.markdown(table_html, unsafe_allow_html=True)
+            st.dataframe(expenses_only.style.set_table_styles([
+                {"selector": "th", "props": [("border", "1px solid #ccc"), ("background-color", "#f2f2f2")]},
+                {"selector": "td", "props": [("border", "1px solid #ccc")]}
+            ]))
 
             for i, row in expenses_only.iterrows():
                 st.markdown(f"**Entry #{i} Controls**")
