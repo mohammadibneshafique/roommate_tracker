@@ -1,83 +1,44 @@
-import pandas as pd
+class Roommate:
+    def __init__(self, name):
+        self.name = name
+        self.expenses = []
 
-# Initialize empty DataFrame
-try:
-    df = pd.read_excel("expenses.xlsx")
-except FileNotFoundError:
-    df = pd.DataFrame(columns=["Name", "Amount", "Description"])
+    def add_expense(self, amount, description):
+        self.expenses.append((amount, description))
 
-def save_to_excel():
-    df.to_excel("expenses.xlsx", index=False)
-    print("✅ Data saved to expenses.xlsx")
+    def edit_expense(self, index, new_amount, new_description):
+        if 0 <= index < len(self.expenses):
+            self.expenses[index] = (new_amount, new_description)
+        else:
+            print("❌ Invalid index.")
 
-def add_expense():
-    name = input("Who paid? (Mohammad/Mahtab): ").strip()
-    amount = float(input("Amount (SAR): "))
-    description = input("Description: ").strip()
-    global df
-    df = pd.concat([df, pd.DataFrame([{
-        "Name": name,
-        "Amount": amount,
-        "Description": description
-    }])], ignore_index=True)
-    save_to_excel()
+    def delete_expense(self, index):
+        if 0 <= index < len(self.expenses):
+            del self.expenses[index]
+        else:
+            print("❌ Invalid index.")
 
-def show_expenses():
-    if df.empty:
-        print("No expenses recorded.")
-    else:
-        print("\n📋 All Expenses:")
-        print(df)
+    def clear_expenses(self):
+        self.expenses = []
 
-def edit_expense():
-    show_expenses()
-    index = int(input("Enter index to edit: "))
-    if 0 <= index < len(df):
-        new_amount = float(input("New amount (SAR): "))
-        new_desc = input("New description: ")
-        df.at[index, "Amount"] = new_amount
-        df.at[index, "Description"] = new_desc
-        save_to_excel()
-    else:
-        print("Invalid index.")
+    def total_expense(self):
+        return sum(amount for amount, _ in self.expenses)
 
-def delete_expense():
-    show_expenses()
-    index = int(input("Enter index to delete: "))
-    if 0 <= index < len(df):
-        global df
-        df = df.drop(index).reset_index(drop=True)
-        save_to_excel()
-    else:
-        print("Invalid index.")
+    def show_expenses(self):
+        if not self.expenses:
+            print("No expenses recorded.")
+        else:
+            for i, (amount, desc) in enumerate(self.expenses):
+                print(f"{i}. {desc}: {amount:.2f} SAR")
 
-def clear_expenses():
-    confirm = input("⚠️ Clear all data? (yes/no): ")
-    if confirm.lower() == "yes":
-        global df
-        df = pd.DataFrame(columns=["Name", "Amount", "Description"])
-        save_to_excel()
-        print("All expenses cleared.")
 
-def show_summary():
-    total_mohammad = df[df["Name"].str.lower() == "mohammad"]["Amount"].sum()
-    total_mahtab = df[df["Name"].str.lower() == "mahtab"]["Amount"].sum()
-    total = total_mohammad + total_mahtab
-    split = total / 2
-    print(f"\n💰 Summary:")
-    print(f"Total spent by Mohammad: {total_mohammad:.2f} SAR")
-    print(f"Total spent by Mahtab: {total_mahtab:.2f} SAR")
-    print(f"Each should pay: {split:.2f} SAR")
-    if total_mohammad > split:
-        print(f"Mahtab owes Mohammad: {total_mohammad - split:.2f} SAR")
-    elif total_mahtab > split:
-        print(f"Mohammad owes Mahtab: {total_mahtab - split:.2f} SAR")
-    else:
-        print("You're all settled up!")
+# Setup
+roommate1 = Roommate("Mohammad")
+roommate2 = Roommate("Mahtab")
 
 # Menu loop
 while True:
-    print("\n📌 Menu:")
+    print("\n📋 Expense Tracker Menu:")
     print("1. Add Expense")
     print("2. Show Expenses")
     print("3. Edit Expense")
@@ -89,19 +50,70 @@ while True:
     choice = input("Choose an option (1–7): ")
 
     if choice == "1":
-        add_expense()
+        name = input("Who paid? (Mohammad/Mahtab): ").strip().lower()
+        amount = float(input("Amount (SAR): "))
+        desc = input("Description: ")
+        if name == "mohammad":
+            roommate1.add_expense(amount, desc)
+        elif name == "mahtab":
+            roommate2.add_expense(amount, desc)
+        else:
+            print("❌ Invalid name.")
+
     elif choice == "2":
-        show_expenses()
+        print("\nMohammad's Expenses:")
+        roommate1.show_expenses()
+        print("\nMahtab's Expenses:")
+        roommate2.show_expenses()
+
     elif choice == "3":
-        edit_expense()
+        name = input("Whose expense to edit? (Mohammad/Mahtab): ").strip().lower()
+        index = int(input("Expense index to edit: "))
+        new_amount = float(input("New amount (SAR): "))
+        new_desc = input("New description: ")
+        if name == "mohammad":
+            roommate1.edit_expense(index, new_amount, new_desc)
+        elif name == "mahtab":
+            roommate2.edit_expense(index, new_amount, new_desc)
+        else:
+            print("❌ Invalid name.")
+
     elif choice == "4":
-        delete_expense()
+        name = input("Whose expense to delete? (Mohammad/Mahtab): ").strip().lower()
+        index = int(input("Expense index to delete: "))
+        if name == "mohammad":
+            roommate1.delete_expense(index)
+        elif name == "mahtab":
+            roommate2.delete_expense(index)
+        else:
+            print("❌ Invalid name.")
+
     elif choice == "5":
-        clear_expenses()
+        confirm = input("⚠️ Are you sure you want to clear all data? (yes/no): ").strip().lower()
+        if confirm == "yes":
+            roommate1.clear_expenses()
+            roommate2.clear_expenses()
+            print("✅ All expenses cleared.")
+
     elif choice == "6":
-        show_summary()
+        total1 = roommate1.total_expense()
+        total2 = roommate2.total_expense()
+        total_shared = total1 + total2
+        split = total_shared / 2
+        print(f"\n💰 Summary:")
+        print(f"Total spent by Mohammad: {total1:.2f} SAR")
+        print(f"Total spent by Mahtab: {total2:.2f} SAR")
+        print(f"Each should pay: {split:.2f} SAR")
+        if total1 > split:
+            print(f"Mahtab owes Mohammad: {total1 - split:.2f} SAR")
+        elif total2 > split:
+            print(f"Mohammad owes Mahtab: {total2 - split:.2f} SAR")
+        else:
+            print("You're all settled up!")
+
     elif choice == "7":
-        print("Goodbye, Mohammad! Stay fair and balanced.")
+        print("👋 Exiting... Stay fair and balanced!")
         break
+
     else:
-        print("Invalid option. Try again.")
+        print("❌ Invalid option. Try again.")
