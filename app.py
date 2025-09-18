@@ -106,49 +106,61 @@ elif section == "📊 View Details":
         else:
             st.markdown("""
             <style>
-            .entry-row {
+            .cell {
                 border: 1px solid #ccc;
                 padding: 6px;
-                margin-bottom: 4px;
-                border-radius: 4px;
                 font-size: 14px;
+                border-radius: 4px;
+                background-color: #f9f9f9;
+                text-align: center;
             }
             </style>
             """, unsafe_allow_html=True)
 
+            # Header row
+            header = st.columns([1, 2, 2, 2, 2, 2, 1, 1])
+            header[0].markdown("**#**")
+            header[1].markdown("**Date**")
+            header[2].markdown("**Cost (SR)**")
+            header[3].markdown("**Paid By**")
+            header[4].markdown("**Voucher**")
+            header[5].markdown("**Type**")
+            header[6].markdown("**Edit**")
+            header[7].markdown("**Delete**")
+
+            # Entry rows
             for i, row in expenses_only.iterrows():
-                with st.container():
-                    cols = st.columns([1, 2, 2, 2, 2, 2, 1, 1])
-                    cols[0].markdown(f"<div class='entry-row'><b>{i}</b></div>", unsafe_allow_html=True)
-                    cols[1].markdown(f"<div class='entry-row'>{row['Date']}</div>", unsafe_allow_html=True)
-                    cols[2].markdown(f"<div class='entry-row'>SR {row['Cost (SR)']:.2f}</div>", unsafe_allow_html=True)
-                    cols[3].markdown(f"<div class='entry-row'>{row['Paid By']}</div>", unsafe_allow_html=True)
-                    cols[4].markdown(f"<div class='entry-row'>{row['Voucher']}</div>", unsafe_allow_html=True)
-                    cols[5].markdown(f"<div class='entry-row'>{row['Type']}</div>", unsafe_allow_html=True)
+                cols = st.columns([1, 2, 2, 2, 2, 2, 1, 1])
+                cols[0].markdown(f"<div class='cell'>{i}</div>", unsafe_allow_html=True)
+                cols[1].markdown(f"<div class='cell'>{row['Date']}</div>", unsafe_allow_html=True)
+                cols[2].markdown(f"<div class='cell'>SR {row['Cost (SR)']:.2f}</div>", unsafe_allow_html=True)
+                cols[3].markdown(f"<div class='cell'>{row['Paid By']}</div>", unsafe_allow_html=True)
+                cols[4].markdown(f"<div class='cell'>{row['Voucher']}</div>", unsafe_allow_html=True)
+                cols[5].markdown(f"<div class='cell'>{row['Type']}</div>", unsafe_allow_html=True)
 
-                    if cols[6].button("✏️", key=f"edit_{i}"):
-                        with st.form(f"edit_form_{i}"):
-                            new_date = st.date_input("Date", value=pd.to_datetime(row["Date"]))
-                            new_cost = st.number_input("Cost (SR)", value=float(row["Cost (SR)"]), format="%.2f")
-                            new_payer = st.selectbox("Paid By", ["Abdullah", "Mahtab"], index=["Abdullah", "Mahtab"].index(row["Paid By"]))
-                            new_voucher = st.text_input("Voucher filename", value=row["Voucher"])
-                            submitted = st.form_submit_button("✅ Save Changes")
-                            if submitted:
-                                original_index = df[(df["Type"] == "Expense")].index[i]
-                                df.at[original_index, "Date"] = new_date.strftime("%Y-%m-%d")
-                                df.at[original_index, "Cost (SR)"] = new_cost
-                                df.at[original_index, "Paid By"] = new_payer
-                                df.at[original_index, "Voucher"] = new_voucher
-                                df.to_excel(EXCEL_FILE, index=False)
-                                st.success("Entry updated successfully.")
-                                st.experimental_rerun()
+                if cols[6].button("✏️", key=f"edit_{i}"):
+                    with st.form(f"edit_form_{i}"):
+                        new_date = st.date_input("Date", value=pd.to_datetime(row["Date"]))
+                        new_cost = st.number_input("Cost (SR)", value=float(row["Cost (SR)"]), format="%.2f")
+                        new_payer = st.selectbox("Paid By", ["Abdullah", "Mahtab"], index=["Abdullah", "Mahtab"].index(row["Paid By"]))
+                        new_voucher = st.text_input("Voucher filename", value=row["Voucher"])
+                        submitted = st.form_submit_button("✅ Save Changes")
+                        if submitted:
+                            original_index = df[(df["Type"] == "Expense")].index[i]
+                            df.at[original_index, "Date"] = new_date.strftime("%Y-%m-%d")
+                            df.at[original_index, "Cost (SR)"] = new_cost
+                            df.at[original_index, "Paid By"] = new_payer
+                            df.at[original_index, "Voucher"] = new_voucher
+                            df.to_excel(EXCEL_FILE, index=False)
+                            st.success("Entry updated successfully.")
+                            st.experimental_rerun()
 
-                    if cols[7].button("🗑️", key=f"delete_{i}"):
-                        original_index = df[(df["Type"] == "Expense")].index[i]
-                        df = df.drop(index=original_index).reset_index(drop=True)
-                        df.to_excel(EXCEL_FILE, index=False)
-                        st.success("Entry deleted successfully.")
-                        st.experimental_rerun()
+                if cols[7].button("🗑️", key=f"delete_{i}"):
+                    original_index = df[(df["Type"] == "Expense")].index[i]
+                    df = df.drop(index=original_index).reset_index(drop=True)
+                    df.to_excel(EXCEL_FILE, index=False)
+                    st.success("Entry deleted successfully.")
+                    st.experimental_rerun()
 
 # 🧹 Reset All
 elif section == "🧹 Reset All":
