@@ -1,119 +1,102 @@
-class Roommate:
-    def __init__(self, name):
-        self.name = name
-        self.expenses = []
+import streamlit as st
+import pandas as pd
+from datetime import date
+import os
 
-    def add_expense(self, amount, description):
-        self.expenses.append((amount, description))
+EXCEL_FILE = "expenses.xlsx"
 
-    def edit_expense(self, index, new_amount, new_description):
-        if 0 <= index < len(self.expenses):
-            self.expenses[index] = (new_amount, new_description)
+# Load or create Excel file
+if os.path.exists(EXCEL_FILE):
+    df = pd.read_excel(EXCEL_FILE)
+else:
+    df = pd.DataFrame(columns=[
+        "Date", "Cost (SR)", "Paid By", "Voucher", "Type"
+    ])
+    df.to_excel(EXCEL_FILE, index=False)
+
+st.set_page_config(page_title="Roommate Ledger", page_icon="🏠")
+st.title("🏠 Roommate Ledger")
+
+section = st.sidebar.radio("Navigate", ["➕ Log Expense", "💸 Record Payment", "📊 View Details"])
+
+# ➕ Log Expense
+if section == "➕ Log Expense":
+    st.subheader("Add a New Expense")
+
+    cost = st.number_input("Total Cost (SR)", min_value=0.0, format="%.2f")
+    payer = st.selectbox("Paid By", ["Abdullah", "Mahtab"])
+    expense_date = st.date_input("Date", value=date.today())
+    voucher = st.text_input("Voucher filename (optional)")
+
+    if st.button("✅ Save Expense"):
+        new_entry = pd.DataFrame([{
+            "Date": expense_date.strftime("%Y-%m-%d"),
+            "Cost (SR)": cost,
+            "Paid By": payer,
+            "Voucher": voucher if voucher else "None",
+            "Type": "Expense"
+        }])
+
+        df = pd.concat([df, new_entry], ignore_index=True)
+        df.to_excel(EXCEL_FILE, index=False)
+        st.success("Expense saved to Excel!")
+
+# 💸 Record Payment
+elif section == "💸 Record Payment":
+    st.subheader("Record a Payment Between Roommates")
+    name = st.selectbox("Who paid back?", ["Abdullah", "Mahtab"])
+    amount = st.number_input("Amount Paid (SR)", min_value=0.0, format="%.2f")
+
+    if st.button("Confirm Payment"):
+        if amount > 0:
+            payment_entry = pd.DataFrame([{
+                "Date": date.today().strftime("%Y-%m-%d"),
+                "Cost (SR)": amount,
+                "Paid By": name,
+                "Voucher": "None",
+                "Type": "Payment"
+            }])
+            df = pd.concat([df, payment_entry], ignore_index=True)
+            df.to_excel(EXCEL_FILE, index=False)
+            st.success(f"{name} paid SR {amount:.2f} toward their balance.")
         else:
-            print("❌ Invalid index.")
+            st.warning("Enter a valid amount.")
 
-    def delete_expense(self, index):
-        if 0 <= index < len(self.expenses):
-            del self.expenses[index]
+# 📊 View Details
+elif section == "📊 View Details":
+    view = st.radio("Choose View", ["Roommate Ledger", "Expense Journal"])
+
+    if view == "Roommate Ledger":
+        st.subheader("📋 Summary of Contributions & Balances")
+        if df.empty:
+            st.info("No data yet.")
         else:
-            print("❌ Invalid index.")
+            expenses_only = df[df["Type"] == "Expense"]
+            payments_only = df[df["Type"] == "Payment"]
 
-    def clear_expenses(self):
-        self.expenses = []
+            totals = {"Abdullah": {"contribution": 0.0, "balance": 0.0},
+                      "Mahtab": {"contribution": 0.0, "balance": 0.0}}
 
-    def total_expense(self):
-        return sum(amount for amount, _ in self.expenses)
+            for _, row in expenses_only.iterrows():
+                payer = row["Paid By"]
+                cost = row["Cost (SR)"]
+                totals[payer]["contribution"] += cost
+                split = cost / 2
+                totals["Abdullah"]["balance"] += split
+                totals["Mahtab"]["balance"] += split
 
-    def show_expenses(self):
-        if not self.expenses:
-            print("No expenses recorded.")
+            for _, row in payments_only.iterrows():
+                payer = row["Paid By"]
+                amount = row["Cost (SR)"]
+                totals[payer]["balance"] -= amount
+
+            for name in ["Abdullah", "Mahtab"]:
+                st.write(f"**{name} Total Contribution:** SR {totals[name]['contribution']:.2f}")
+                st.write(f"**{name} Current Balance:** SR {totals[name]['balance']:.2f}")
+
+    elif view == "Expense Journal":
+        st.subheader("📜 All Logged Expenses")
+        if df.empty:
+            st.info("No expenses logged yet.")
         else:
-            for i, (amount, desc) in enumerate(self.expenses):
-                print(f"{i}. {desc}: {amount:.2f} SAR")
-
-
-# Setup
-roommate1 = Roommate("Mohammad")
-roommate2 = Roommate("Mahtab")
-
-# Menu loop
-while True:
-    print("\n📋 Expense Tracker Menu:")
-    print("1. Add Expense")
-    print("2. Show Expenses")
-    print("3. Edit Expense")
-    print("4. Delete Expense")
-    print("5. Clear All Expenses")
-    print("6. Show Summary")
-    print("7. Exit")
-
-    choice = input("Choose an option (1–7): ")
-
-    if choice == "1":
-        name = input("Who paid? (Mohammad/Mahtab): ").strip().lower()
-        amount = float(input("Amount (SAR): "))
-        desc = input("Description: ")
-        if name == "mohammad":
-            roommate1.add_expense(amount, desc)
-        elif name == "mahtab":
-            roommate2.add_expense(amount, desc)
-        else:
-            print("❌ Invalid name.")
-
-    elif choice == "2":
-        print("\nMohammad's Expenses:")
-        roommate1.show_expenses()
-        print("\nMahtab's Expenses:")
-        roommate2.show_expenses()
-
-    elif choice == "3":
-        name = input("Whose expense to edit? (Mohammad/Mahtab): ").strip().lower()
-        index = int(input("Expense index to edit: "))
-        new_amount = float(input("New amount (SAR): "))
-        new_desc = input("New description: ")
-        if name == "mohammad":
-            roommate1.edit_expense(index, new_amount, new_desc)
-        elif name == "mahtab":
-            roommate2.edit_expense(index, new_amount, new_desc)
-        else:
-            print("❌ Invalid name.")
-
-    elif choice == "4":
-        name = input("Whose expense to delete? (Mohammad/Mahtab): ").strip().lower()
-        index = int(input("Expense index to delete: "))
-        if name == "mohammad":
-            roommate1.delete_expense(index)
-        elif name == "mahtab":
-            roommate2.delete_expense(index)
-        else:
-            print("❌ Invalid name.")
-
-    elif choice == "5":
-        confirm = input("⚠️ Are you sure you want to clear all data? (yes/no): ").strip().lower()
-        if confirm == "yes":
-            roommate1.clear_expenses()
-            roommate2.clear_expenses()
-            print("✅ All expenses cleared.")
-
-    elif choice == "6":
-        total1 = roommate1.total_expense()
-        total2 = roommate2.total_expense()
-        total_shared = total1 + total2
-        split = total_shared / 2
-        print(f"\n💰 Summary:")
-        print(f"Total spent by Mohammad: {total1:.2f} SAR")
-        print(f"Total spent by Mahtab: {total2:.2f} SAR")
-        print(f"Each should pay: {split:.2f} SAR")
-        if total1 > split:
-            print(f"Mahtab owes Mohammad: {total1 - split:.2f} SAR")
-        elif total2 > split:
-            print(f"Mohammad owes Mahtab: {total2 - split:.2f} SAR")
-        else:
-            print("You're all settled up!")
-
-    elif choice == "7":
-        print("👋 Exiting... Stay fair and balanced!")
-        break
-
-    else:
-        print("❌ Invalid option. Try again.")
+            st.dataframe(df[df["Type"] == "Expense"])
