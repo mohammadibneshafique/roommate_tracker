@@ -104,34 +104,37 @@ elif section == "📊 View Details":
         if expenses_only.empty:
             st.info("No expenses logged yet.")
         else:
-            st.dataframe(expenses_only)
+            for i, row in expenses_only.iterrows():
+                col1, col2, col3, col4, col5, col6, col7 = st.columns([2, 2, 2, 2, 2, 1, 1])
+                col1.write(row["Date"])
+                col2.write(f"SR {row['Cost (SR)']:.2f}")
+                col3.write(row["Paid By"])
+                col4.write(row["Voucher"])
+                col5.write(row["Type"])
 
-            st.markdown("### ✏️ Edit or 🗑️ Delete an Entry")
-            selected_index = st.number_input("Select entry number (starts from 0)", min_value=0, max_value=len(expenses_only)-1, step=1)
-            selected_row = expenses_only.iloc[selected_index]
+                if col6.button("✏️", key=f"edit_{i}"):
+                    with st.form(f"edit_form_{i}"):
+                        new_date = st.date_input("Date", value=pd.to_datetime(row["Date"]))
+                        new_cost = st.number_input("Cost (SR)", value=float(row["Cost (SR)"]), format="%.2f")
+                        new_payer = st.selectbox("Paid By", ["Abdullah", "Mahtab"], index=["Abdullah", "Mahtab"].index(row["Paid By"]))
+                        new_voucher = st.text_input("Voucher filename", value=row["Voucher"])
+                        submitted = st.form_submit_button("✅ Save Changes")
+                        if submitted:
+                            original_index = df[(df["Type"] == "Expense")].index[i]
+                            df.at[original_index, "Date"] = new_date.strftime("%Y-%m-%d")
+                            df.at[original_index, "Cost (SR)"] = new_cost
+                            df.at[original_index, "Paid By"] = new_payer
+                            df.at[original_index, "Voucher"] = new_voucher
+                            df.to_excel(EXCEL_FILE, index=False)
+                            st.success("Entry updated successfully.")
+                            st.experimental_rerun()
 
-            new_date = st.date_input("Date", value=pd.to_datetime(selected_row["Date"]))
-            new_cost = st.number_input("Cost (SR)", value=float(selected_row["Cost (SR)"]), format="%.2f")
-            new_payer = st.selectbox("Paid By", ["Abdullah", "Mahtab"], index=["Abdullah", "Mahtab"].index(selected_row["Paid By"]))
-            new_voucher = st.text_input("Voucher filename", value=selected_row["Voucher"])
-
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("✅ Save Changes"):
-                    original_index = df[(df["Type"] == "Expense")].index[selected_index]
-                    df.at[original_index, "Date"] = new_date.strftime("%Y-%m-%d")
-                    df.at[original_index, "Cost (SR)"] = new_cost
-                    df.at[original_index, "Paid By"] = new_payer
-                    df.at[original_index, "Voucher"] = new_voucher
-                    df.to_excel(EXCEL_FILE, index=False)
-                    st.success("Entry updated successfully!")
-
-            with col2:
-                if st.button("🗑️ Delete Entry"):
-                    original_index = df[(df["Type"] == "Expense")].index[selected_index]
+                if col7.button("🗑️", key=f"delete_{i}"):
+                    original_index = df[(df["Type"] == "Expense")].index[i]
                     df = df.drop(index=original_index).reset_index(drop=True)
                     df.to_excel(EXCEL_FILE, index=False)
-                    st.success("Entry deleted successfully!")
+                    st.success("Entry deleted successfully.")
+                    st.experimental_rerun()
 
 # 🧹 Reset All
 elif section == "🧹 Reset All":
