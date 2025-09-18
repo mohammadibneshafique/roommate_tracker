@@ -104,16 +104,29 @@ elif section == "📊 View Details":
         if expenses_only.empty:
             st.info("No expenses logged yet.")
         else:
-            st.dataframe(expenses_only.style.set_table_styles([
-                {"selector": "th", "props": [("border", "1px solid #ccc"), ("background-color", "#f2f2f2")]},
-                {"selector": "td", "props": [("border", "1px solid #ccc")]}
-            ]))
+            st.markdown("""
+            <style>
+            .entry-row {
+                border: 1px solid #ccc;
+                padding: 6px;
+                margin-bottom: 4px;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
 
             for i, row in expenses_only.iterrows():
-                st.markdown(f"**Entry #{i} Controls**")
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button(f"✏️ Edit Entry #{i}", key=f"edit_{i}"):
+                with st.container():
+                    cols = st.columns([1, 2, 2, 2, 2, 2, 1, 1])
+                    cols[0].markdown(f"<div class='entry-row'><b>{i}</b></div>", unsafe_allow_html=True)
+                    cols[1].markdown(f"<div class='entry-row'>{row['Date']}</div>", unsafe_allow_html=True)
+                    cols[2].markdown(f"<div class='entry-row'>SR {row['Cost (SR)']:.2f}</div>", unsafe_allow_html=True)
+                    cols[3].markdown(f"<div class='entry-row'>{row['Paid By']}</div>", unsafe_allow_html=True)
+                    cols[4].markdown(f"<div class='entry-row'>{row['Voucher']}</div>", unsafe_allow_html=True)
+                    cols[5].markdown(f"<div class='entry-row'>{row['Type']}</div>", unsafe_allow_html=True)
+
+                    if cols[6].button("✏️", key=f"edit_{i}"):
                         with st.form(f"edit_form_{i}"):
                             new_date = st.date_input("Date", value=pd.to_datetime(row["Date"]))
                             new_cost = st.number_input("Cost (SR)", value=float(row["Cost (SR)"]), format="%.2f")
@@ -129,8 +142,8 @@ elif section == "📊 View Details":
                                 df.to_excel(EXCEL_FILE, index=False)
                                 st.success("Entry updated successfully.")
                                 st.experimental_rerun()
-                with col2:
-                    if st.button(f"🗑️ Delete Entry #{i}", key=f"delete_{i}"):
+
+                    if cols[7].button("🗑️", key=f"delete_{i}"):
                         original_index = df[(df["Type"] == "Expense")].index[i]
                         df = df.drop(index=original_index).reset_index(drop=True)
                         df.to_excel(EXCEL_FILE, index=False)
