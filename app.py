@@ -91,7 +91,7 @@ elif section == "📊 View Details":
 
             for name in ["Abdullah", "Mahtab"]:
                 st.write(f"**{name} Total Contribution:** SR {totals[name]['contribution']:.2f}")
-                st.write(f"**{name} Current Balance:** SR {totals[name]['balance']:.2f}")
+                st.write(f"**{name} Total Due:** SR {totals[name]['balance']:.2f}")
 
             st.markdown("---")
             st.write(f"🧾 **Total Expenses (All): SR {total_expenses:.2f}**")
